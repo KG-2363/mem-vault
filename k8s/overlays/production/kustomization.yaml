@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ../../base
+
+namespace: memvault-production
+
+commonLabels:
+  environment: production
+
+replicas:
+  - name: upload-service
+    count: 3
+  - name: delivery-service
+    count: 3
+  - name: auth-service
+    count: 2
+  - name: api-service
+    count: 3
+
+images:
+  - name: REGISTRY/upload-service
+    newName: asia-south1-docker.pkg.dev/PROJECT_ID/memvault-services/upload-service
+    newTag: stable
+  - name: REGISTRY/enhancement-service
+    newName: asia-south1-docker.pkg.dev/PROJECT_ID/memvault-services/enhancement-service
+    newTag: stable
+  - name: REGISTRY/delivery-service
+    newName: asia-south1-docker.pkg.dev/PROJECT_ID/memvault-services/delivery-service
+    newTag: stable
+  - name: REGISTRY/auth-service
+    newName: asia-south1-docker.pkg.dev/PROJECT_ID/memvault-services/auth-service
+    newTag: stable
+  - name: REGISTRY/api-service
+    newName: asia-south1-docker.pkg.dev/PROJECT_ID/memvault-services/api-service
+    newTag: stable

@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package memvault.enhancement.v1;
+
+option java_package = "com.memvault.enhancement.v1";
+option go_package = "github.com/memvault/api-service/proto/enhancement/v1";
+
+// Batch photo enhancement — bidirectional streaming
+service EnhancementService {
+  rpc EnhanceSingle (EnhanceRequest) returns (EnhanceResponse);
+  rpc EnhanceBatch  (stream EnhanceRequest) returns (stream EnhanceResponse);
+}
+
+enum Enhancement {
+  ENHANCEMENT_UNSPECIFIED  = 0;
+  SKIN_TONE                = 1;
+  BACKGROUND_REMOVAL       = 2;
+  THUMBNAIL                = 3;
+}
+
+message EnhanceRequest {
+  string request_id  = 1;
+  string source_url  = 2;           // GCS URI or HTTPS URL
+  repeated Enhancement enhancements = 3;
+}
+
+message EnhanceResponse {
+  string request_id       = 1;
+  string enhanced_url     = 2;
+  string thumb_256_url    = 3;
+  string thumb_1024_url   = 4;
+  int64  processing_time_ms = 5;
+  string error            = 6;      // non-empty on failure
+}

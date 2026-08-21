@@ -1,0 +1,85 @@
+# Lightweight local dev stack — emulators + upload API + portal only.
+# Run with: docker compose -f docker-compose.dev.yml up --build
+
+services:
+
+  # ── GCS emulator ──────────────────────────────────────────────────────────
+  fake-gcs:
+    image: fsouza/fake-gcs-server:1.47
+    ports:
+      - "4443:4443"
+    command: ["-scheme", "http", "-port", "4443", "-public-host", "localhost:4443"]
+    volumes:
+      - gcs-data:/data
+
+  # ── Pub/Sub emulator (uses google-cloud-cli:emulators which bundles OpenJDK) ─
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: >
+      bash -c "
+        gcloud beta emulators pubsub start --host-port=0.0.0.0:8085 --project=demo-project
+      "
+    ports:
+      - "8085:8085"
+    environment:
+      CLOUDSDK_CORE_PROJECT: demo-project
+
+  # ── Firestore emulator (same image, bundles OpenJDK) ──────────────────────
+  firestore-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: >
+      bash -c "
+        gcloud emulators firestore start --host-port=0.0.0.0:8080 --project=demo-project
+      "
+    ports:
+      - "8080:8080"
+    environment:
+      CLOUDSDK_CORE_PROJECT: demo-project
+
+  # ── Upload service ─────────────────────────────────────────────────────────
+  upload-service:
+    build: ./services/upload-service
+    ports:
+      - "8001:8000"
+    env_file: .env
+    environment:
+      GCP_PROJECT_ID: demo-project
+      GCS_BUCKET_NAME: memvault-local
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      STORAGE_EMULATOR_HOST: http://fake-gcs:4443
+      DEV_SKIP_AUTH: "true"
+      DEV_TENANT_ID: "ten_01SEED000000000000000000"
+      DEV_USER_ID: "uid_seed_owner"
+      DEV_ROLE: "STUDIO_OWNER"
+    depends_on:
+      - fake-gcs
+      - pubsub-emulator
+      - firestore-emulator
+    volumes:
+      - ./services/upload-service:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Studio portal (dev mode, hot-reload) ───────────────────────────────────
+  studio-portal:
+    build:
+      context: ./portals/studio-portal
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_FIREBASE_API_KEY: demo-key
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: demo-project.firebaseapp.com
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: demo-project
+      NEXT_PUBLIC_UPLOAD_SERVICE_URL: http://localhost:8001
+      NEXT_PUBLIC_DELIVERY_SERVICE_URL: http://localhost:8002
+      NEXT_PUBLIC_USE_EMULATORS: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    volumes:
+      - ./portals/studio-portal/src:/app/src
+      - portal-next:/app/.next
+    command: npm run dev
+
+volumes:
+  gcs-data:
+  portal-next:

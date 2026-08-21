@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PhotoEnhancedEvent",
+  "type": "object",
+  "required": ["event_type", "photo_id", "album_id", "tenant_id", "gcs_enhanced_path", "enhanced_at"],
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "const": "photo.enhanced"
+    },
+    "photo_id": {
+      "type": "string"
+    },
+    "album_id": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "gcs_enhanced_path": {
+      "type": "string",
+      "pattern": "^gs://"
+    },
+    "gcs_thumb_256": {
+      "type": "string",
+      "pattern": "^gs://"
+    },
+    "gcs_thumb_1024": {
+      "type": "string",
+      "pattern": "^gs://"
+    },
+    "enhanced_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

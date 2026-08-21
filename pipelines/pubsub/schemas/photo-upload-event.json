@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PhotoUploadedEvent",
+  "type": "object",
+  "required": ["event_type", "photo_id", "album_id", "tenant_id", "gcs_raw_path", "uploaded_at"],
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "const": "photo.uploaded"
+    },
+    "photo_id": {
+      "type": "string",
+      "pattern": "^ph_[0-9A-Z]{26}$"
+    },
+    "album_id": {
+      "type": "string"
+    },
+    "tenant_id": {
+      "type": "string"
+    },
+    "gcs_raw_path": {
+      "type": "string",
+      "pattern": "^gs://"
+    },
+    "uploaded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

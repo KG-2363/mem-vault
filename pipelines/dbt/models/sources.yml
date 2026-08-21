@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: analytics_raw
+    database: "{{ env_var('GCP_PROJECT_ID') }}"
+    schema: analytics
+    tables:
+      - name: events_raw
+        description: All application events streamed from Pub/Sub
+        columns:
+          - name: event_id
+            description: Unique event identifier
+            tests: [unique, not_null]
+          - name: event_type
+            tests: [not_null]
+          - name: tenant_id
+            tests: [not_null]
+          - name: event_timestamp
+            tests: [not_null]

@@ -1,0 +1,80 @@
+# ── Secrets: never commit ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+credentials.json
+service-account*.json
+config.toml
+!config.toml.example
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+# ── Node ─────────────────────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+*.log
+npm-debug.log*
+# ── Data / indexes / local artefacts ─────────────────────────────────────────
+data/
+*.duckdb
+*.sqlite
+*.sqlite3
+chroma/
+.chroma/
+store/*.db
+# ── OS / editor ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+# Python
+*.pyo
+.ruff_cache/
+# Node / Next.js
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfplan
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# Secrets / credentials — never commit these
+.env.local
+.env.*.local
+*.json.key
+gcp-sa-*.json
+*-credentials.json
+# Docker
+*.tar
+# OS / IDE
+.vscode/settings.json
+*.swp
+*.swo
+# dbt
+pipelines/dbt/target/
+pipelines/dbt/dbt_packages/
+pipelines/dbt/logs/
+# Test artifacts
+coverage/
+htmlcov/
+.coverage
+junit*.xml

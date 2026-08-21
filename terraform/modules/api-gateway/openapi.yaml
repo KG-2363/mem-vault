@@ -1,0 +1,140 @@
+swagger: "2.0"
+info:
+  title: MemVault B2B API
+  description: REST API for vehicle and real-estate photo enhancement
+  version: "1.0"
+
+host: "REPLACE_WITH_GATEWAY_HOST"
+basePath: "/v1"
+schemes:
+  - https
+
+consumes:
+  - application/json
+produces:
+  - application/json
+
+securityDefinitions:
+  ApiKeyAuth:
+    type: apiKey
+    in: header
+    name: x-api-key
+
+security:
+  - ApiKeyAuth: []
+
+x-google-backend:
+  address: "https://REPLACE_WITH_API_SERVICE_URL"
+
+x-google-quota:
+  metricCosts:
+    enhance-requests: 1
+
+paths:
+  /enhance:
+    post:
+      summary: Enhance a single photo
+      operationId: enhanceSingle
+      parameters:
+        - in: body
+          name: body
+          schema:
+            $ref: "#/definitions/EnhanceRequest"
+      responses:
+        "200":
+          description: Enhancement result
+          schema:
+            $ref: "#/definitions/EnhanceResponse"
+        "429":
+          description: Rate limit exceeded
+
+  /enhance/batch:
+    post:
+      summary: Submit a batch enhancement job
+      operationId: enhanceBatch
+      parameters:
+        - in: body
+          name: body
+          schema:
+            $ref: "#/definitions/BatchEnhanceRequest"
+      responses:
+        "202":
+          description: Job accepted
+          schema:
+            $ref: "#/definitions/BatchJobResponse"
+
+  /jobs/{job_id}:
+    get:
+      summary: Poll batch job status
+      operationId: getJobStatus
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Job status
+          schema:
+            $ref: "#/definitions/BatchJobStatus"
+
+definitions:
+  EnhanceRequest:
+    type: object
+    required:
+      - source_url
+      - enhancements
+    properties:
+      source_url:
+        type: string
+        description: GCS URI or HTTPS URL of the source photo
+      enhancements:
+        type: array
+        items:
+          type: string
+          enum: [SKIN_TONE, BACKGROUND_REMOVAL, THUMBNAIL]
+
+  EnhanceResponse:
+    type: object
+    properties:
+      enhanced_url:
+        type: string
+      thumb_256_url:
+        type: string
+      thumb_1024_url:
+        type: string
+      processing_time_ms:
+        type: integer
+
+  BatchEnhanceRequest:
+    type: object
+    properties:
+      photos:
+        type: array
+        items:
+          $ref: "#/definitions/EnhanceRequest"
+
+  BatchJobResponse:
+    type: object
+    properties:
+      job_id:
+        type: string
+      status:
+        type: string
+
+  BatchJobStatus:
+    type: object
+    properties:
+      job_id:
+        type: string
+      status:
+        type: string
+        enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+      completed:
+        type: integer
+      total:
+        type: integer
+      results:
+        type: array
+        items:
+          $ref: "#/definitions/EnhanceResponse"

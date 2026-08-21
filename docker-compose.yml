@@ -1,0 +1,118 @@
+version: "3.9"
+
+services:
+
+  # ── GCS emulator ────────────────────────────────────────────────────────────
+  fake-gcs:
+    image: fsouza/fake-gcs-server:1.47
+    ports:
+      - "4443:4443"
+    command: ["-scheme", "http", "-port", "4443", "-public-host", "localhost:4443"]
+    volumes:
+      - gcs-data:/data
+
+  # ── Pub/Sub emulator ────────────────────────────────────────────────────────
+  pubsub-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8085
+    ports:
+      - "8085:8085"
+
+  # ── Firestore emulator ──────────────────────────────────────────────────────
+  firestore-emulator:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: gcloud emulators firestore start --host-port=0.0.0.0:8080
+    ports:
+      - "8080:8080"
+
+  # ── Upload service ───────────────────────────────────────────────────────────
+  upload-service:
+    build: ./services/upload-service
+    ports:
+      - "8001:8000"
+    env_file: .env
+    environment:
+      GCS_BUCKET_NAME: memvault-local
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      STORAGE_EMULATOR_HOST: http://fake-gcs:4443
+    depends_on:
+      - fake-gcs
+      - pubsub-emulator
+      - firestore-emulator
+    volumes:
+      - ./services/upload-service:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Enhancement service ──────────────────────────────────────────────────────
+  enhancement-service:
+    build: ./services/enhancement-service
+    ports:
+      - "8010:8000"
+    env_file: .env
+    environment:
+      GCS_BUCKET_NAME: memvault-local
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      STORAGE_EMULATOR_HOST: http://fake-gcs:4443
+    depends_on:
+      - pubsub-emulator
+      - firestore-emulator
+      - fake-gcs
+    volumes:
+      - ./services/enhancement-service:/app
+    command: python main.py
+
+  # ── Delivery service ─────────────────────────────────────────────────────────
+  delivery-service:
+    build: ./services/delivery-service
+    ports:
+      - "8002:8000"
+    env_file: .env
+    environment:
+      GCS_BUCKET_NAME: memvault-local
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+      STORAGE_EMULATOR_HOST: http://fake-gcs:4443
+    depends_on:
+      - fake-gcs
+      - firestore-emulator
+    volumes:
+      - ./services/delivery-service:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Auth service ─────────────────────────────────────────────────────────────
+  auth-service:
+    build: ./services/auth-service
+    ports:
+      - "8003:8000"
+    env_file: .env
+    environment:
+      FIRESTORE_EMULATOR_HOST: firestore-emulator:8080
+    depends_on:
+      - firestore-emulator
+    volumes:
+      - ./services/auth-service:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Studio portal ────────────────────────────────────────────────────────────
+  studio-portal:
+    build:
+      context: ./portals/studio-portal
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      NEXT_PUBLIC_UPLOAD_SERVICE_URL: http://localhost:8001
+      NEXT_PUBLIC_DELIVERY_SERVICE_URL: http://localhost:8002
+    depends_on:
+      - upload-service
+      - delivery-service
+    volumes:
+      - ./portals/studio-portal:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+
+volumes:
+  gcs-data:
